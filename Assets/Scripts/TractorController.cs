@@ -1,13 +1,9 @@
 using UnityEngine;
-using System.IO.Ports;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class TractorController : MonoBehaviour
 {
-    public static TractorController Instance;
-    private SerialPort _serialPort;
-
     public float moveSpeed = 3f;
 
     public Sprite downSprite;
@@ -21,25 +17,12 @@ public class TractorController : MonoBehaviour
 
     void Awake()
     {
-        Instance = this;
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
     }
 
     void Start()
     {
-        try
-        {
-            // IMPORTANTE: Cambia "COM3" al puerto COM correcto de tu adaptador FTDI
-            _serialPort = new SerialPort("COM10", 9600);
-            _serialPort.ReadTimeout = 1;
-            _serialPort.Open();
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError("Error al abrir el puerto serial: " + ex.Message);
-        }
-
         if (downSprite != null)
             sr.sprite = downSprite;
     }
@@ -49,24 +32,10 @@ public class TractorController : MonoBehaviour
         float x = 0f;
         float y = 0f;
 
-        if (_serialPort != null && _serialPort.IsOpen)
-        {
-            try
-            {
-                char command = (char)_serialPort.ReadChar();
-                switch (command)
-                {
-                    case 'W': y = 1f; break;
-                    case 'S': y = -1f; break;
-                    case 'A': x = -1f; break;
-                    case 'D': x = 1f; break;
-                }
-            }
-            catch (System.TimeoutException)
-            {
-                // Es normal que no lleguen datos en cada frame. No hacer nada.
-            }
-        }
+        if (Input.GetKey(KeyCode.A)) x = -1f;
+        if (Input.GetKey(KeyCode.D)) x = 1f;
+        if (Input.GetKey(KeyCode.W)) y = 1f;
+        if (Input.GetKey(KeyCode.S)) y = -1f;
 
         // estilo Pokémon: sin diagonal
         if (x != 0f) y = 0f;
@@ -86,21 +55,5 @@ public class TractorController : MonoBehaviour
     void FixedUpdate()
     {
         rb.MovePosition(rb.position + moveInput * moveSpeed * Time.fixedDeltaTime);
-    }
-
-    public void SendFruitPickupSignal()
-    {
-        if (_serialPort != null && _serialPort.IsOpen)
-        {
-            _serialPort.Write("F");
-        }
-    }
-
-    void OnDestroy()
-    {
-        if (_serialPort != null && _serialPort.IsOpen)
-        {
-            _serialPort.Close();
-        }
     }
 }
