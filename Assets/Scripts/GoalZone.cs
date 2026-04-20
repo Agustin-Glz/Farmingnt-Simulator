@@ -6,6 +6,7 @@ public class GoalZone : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            TractorController.Instance.SendFruitPickupSignal();
             GameManager.Instance.Ganar();
         }
     }
