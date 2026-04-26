@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     [Header("Configuración de Juego")]
     public float tiempoInicial = 30f;
     public float multiplicadorPuntaje = 10f;
+    public int puntosPorCultivo = 10; 
 
     [Header("Referencias UI Juego")]
     public TextMeshProUGUI timerText;
@@ -17,33 +18,39 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI scoreText;
 
     [Header("Referencias UI Menú")]
-    // --- ESTA ES LA LÍNEA QUE TE FALTA ---
     public GameObject creditosPanel; 
+    public GameObject menuInicioPanel; // <-- Para apagar todo el menú a la vez
 
     private float tiempoRestante;
     private bool juegoTerminado = false;
+    private int cultivosAgarrados = 0; 
 
     void Awake()
     {
-        Instance = this;
+        // Singleton para acceder desde otros scripts
+        if (Instance == null) Instance = this;
     }
 
     void Start()
     {
         tiempoRestante = tiempoInicial;
         juegoTerminado = false;
+        cultivosAgarrados = 0;
 
-        // Desactivar paneles al iniciar
+        // Estado inicial de los paneles
         if (losePanel != null) losePanel.SetActive(false);
         if (victoryPanel != null) victoryPanel.SetActive(false);
         if (creditosPanel != null) creditosPanel.SetActive(false);
+        
+        // Aseguramos que el menú principal esté visible al inicio
+        if (menuInicioPanel != null) menuInicioPanel.SetActive(true);
 
         Time.timeScale = 1f;
     }
 
     void Update()
     {
-        // Solo corre el timer si hay un texto asignado (para evitar errores en el Menú)
+        // Solo corre el tiempo si hay un texto de timer (estamos en el nivel)
         if (juegoTerminado || timerText == null) return; 
 
         tiempoRestante -= Time.deltaTime;
@@ -58,11 +65,16 @@ public class GameManager : MonoBehaviour
         timerText.text = "Tiempo: " + Mathf.CeilToInt(tiempoRestante);
     }
 
+    public void RecolectarCultivo()
+    {
+        cultivosAgarrados++;
+    }
+
     // --- FUNCIONES DE NAVEGACIÓN ---
     public void Jugar()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene("SampleScene");
+        SceneManager.LoadScene("SampleScene"); // Asegúrate de que el nombre coincida
     }
 
     public void IrAlMenu()
@@ -77,15 +89,34 @@ public class GameManager : MonoBehaviour
         Debug.Log("Saliendo del juego...");
     }
 
+    public void ReiniciarNivel()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    // ---> NUEVA FUNCIÓN AGREGADA AQUÍ <---
+    public void CargarSiguienteNivel()
+    {
+        // Esto asegura que el tiempo vuelva a correr normal si pausaste el juego al ganar
+        Time.timeScale = 1f; 
+        
+        // Obtiene el número del nivel actual y carga el que sigue en la lista
+        int indiceActual = SceneManager.GetActiveScene().buildIndex;
+        SceneManager.LoadScene(indiceActual + 1);
+    }
+
     // --- FUNCIONES DE CRÉDITOS ---
     public void MostrarCreditos()
     {
         if (creditosPanel != null) creditosPanel.SetActive(true);
+        if (menuInicioPanel != null) menuInicioPanel.SetActive(false); // Oculta el menú y el logo
     }
 
     public void OcultarCreditos()
     {
         if (creditosPanel != null) creditosPanel.SetActive(false);
+        if (menuInicioPanel != null) menuInicioPanel.SetActive(true); // Muestra el menú y el logo
     }
 
     // --- LÓGICA DE JUEGO ---
@@ -94,8 +125,16 @@ public class GameManager : MonoBehaviour
         if (juegoTerminado) return;
         juegoTerminado = true;
         Time.timeScale = 0f;
-        int puntajeFinal = Mathf.CeilToInt(tiempoRestante * multiplicadorPuntaje);
-        if (scoreText != null) scoreText.text = "Puntaje: " + puntajeFinal;
+
+        int puntosDeCultivos = cultivosAgarrados * puntosPorCultivo;
+        int puntosPorTiempo = Mathf.CeilToInt(tiempoRestante * multiplicadorPuntaje);
+        int puntajeFinal = puntosDeCultivos + puntosPorTiempo;
+
+        if (scoreText != null) 
+        {
+            scoreText.text = "Puntaje: " + puntajeFinal;
+        }
+
         if (victoryPanel != null) victoryPanel.SetActive(true);
     }
 
@@ -105,11 +144,5 @@ public class GameManager : MonoBehaviour
         juegoTerminado = true;
         Time.timeScale = 0f;
         if (losePanel != null) losePanel.SetActive(true);
-    }
-
-    public void ReiniciarNivel()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
