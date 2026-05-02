@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
 
     [Header("Configuración de Juego")]
-    public float tiempoInicial = 30f;
+    public float tiempoInicial = 45f; // 45 seconds per level
     public float multiplicadorPuntaje = 10f;
     public int puntosPorCultivo = 10; 
 
@@ -74,6 +74,9 @@ public class GameManager : MonoBehaviour
     public void Jugar()
     {
         Time.timeScale = 1f;
+        // Send reset counter to FPGA
+        var serialFPGA = SerialFPGA.Instance;
+        if (serialFPGA != null) serialFPGA.SendChar('Y');
         SceneManager.LoadScene("SampleScene"); // Asegúrate de que el nombre coincida
     }
 
@@ -92,6 +95,9 @@ public class GameManager : MonoBehaviour
     public void ReiniciarNivel()
     {
         Time.timeScale = 1f;
+        // Send reset counter to FPGA
+        var serialFPGA = SerialFPGA.Instance;
+        if (serialFPGA != null) serialFPGA.SendChar('Y');
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
@@ -100,7 +106,9 @@ public class GameManager : MonoBehaviour
     {
         // Esto asegura que el tiempo vuelva a correr normal si pausaste el juego al ganar
         Time.timeScale = 1f; 
-        
+        // Send reset counter to FPGA
+        var serialFPGA = SerialFPGA.Instance;
+        if (serialFPGA != null) serialFPGA.SendChar('Y');
         // Obtiene el número del nivel actual y carga el que sigue en la lista
         int indiceActual = SceneManager.GetActiveScene().buildIndex;
         SceneManager.LoadScene(indiceActual + 1);
